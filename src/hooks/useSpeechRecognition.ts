@@ -3,12 +3,11 @@ import { useEffect, useRef, useState } from "react";
 export const useSpeechRecognition = (lang: string = "es-ES") => {
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState("");
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
 
   useEffect(() => {
     const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       console.error("Tu navegador no soporta SpeechRecognition");
@@ -25,7 +24,7 @@ export const useSpeechRecognition = (lang: string = "es-ES") => {
       setTranscript(text);
     };
 
-    recognition.onerror = (event: any) => {
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
       console.error("Error en reconocimiento:", event.error);
     };
 
