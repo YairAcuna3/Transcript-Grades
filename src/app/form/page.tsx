@@ -89,7 +89,7 @@ export default function Form() {
                     Registro de Notas
                 </h1>
                 <p className="text-purple-500 font-medium mt-1 text-sm uppercase tracking-widest">
-                    3° de Secundaria — Control por voz
+                    Feria de ciencias - Diego Andre Acuña Mendoza
                 </p>
             </div>
 
