@@ -20,8 +20,12 @@ export const useSpeechRecognition = (lang: string = "es-ES") => {
     recognition.interimResults = false;
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      const text = event.results[event.results.length - 1][0].transcript;
-      setTranscript(text);
+      // Acumular todos los resultados finales, no solo el último
+      let fullText = "";
+      for (let i = 0; i < event.results.length; i++) {
+        fullText += event.results[i][0].transcript + " ";
+      }
+      setTranscript(fullText.trim());
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -45,5 +49,21 @@ export const useSpeechRecognition = (lang: string = "es-ES") => {
     }
   };
 
-  return { transcript, listening, startListening, stopListening };
+  const resetTranscript = () => {
+    setTranscript("");
+    // Si hay una sesión activa, la reiniciamos para que los resultados internos
+    // del reconocedor también se borren
+    if (recognitionRef.current && listening) {
+      recognitionRef.current.stop();
+      recognitionRef.current.start();
+    }
+  };
+
+  return {
+    transcript,
+    listening,
+    startListening,
+    stopListening,
+    resetTranscript,
+  };
 };
