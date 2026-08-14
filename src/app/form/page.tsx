@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
-import { exportGradesToExcel } from "@/components/ExportToExcel";
+import { exportGrades, EXPORT_FORMATS, ExportFormat } from "@/components/ExportToExcel";
 import { Grade } from "@/types/grade";
 import { parseGrades } from "@/lib/parseGrades";
 
@@ -10,6 +10,7 @@ export default function Form() {
     const { transcript, listening, startListening, stopListening, resetTranscript } =
         useSpeechRecognition("es-ES");
     const [grades, setGrades] = useState<Grade[]>([]);
+    const [exportFormat, setExportFormat] = useState<ExportFormat>("xlsx");
 
     // índice del alumno que se está editando, null = ninguno
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -211,21 +212,42 @@ export default function Form() {
                 </div>
 
                 {/* Acciones */}
-                <div className="flex gap-3 pt-2">
-                    <button
-                        onClick={() => exportGradesToExcel(grades)}
-                        disabled={grades.length === 0}
-                        className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-2xl transition-all shadow-sm active:scale-95"
-                    >
-                        📊 Exportar a Excel
-                    </button>
-                    <button
-                        onClick={handleClearAll}
-                        disabled={grades.length === 0 && !transcript}
-                        className="flex items-center justify-center gap-2 bg-red-100 hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400 text-red-600 font-bold py-3 px-5 rounded-2xl transition-all active:scale-95"
-                    >
-                        🗑️ Limpiar
-                    </button>
+                <div className="flex flex-col gap-3 pt-2">
+                    {/* Selector de formato — fila completa */}
+                    <div className="flex items-center justify-center gap-1 bg-gray-100 rounded-2xl px-3 py-1 border border-gray-200">
+                        {EXPORT_FORMATS.map((f) => (
+                            <button
+                                key={f.value}
+                                onClick={() => setExportFormat(f.value)}
+                                title={f.label}
+                                className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-xl text-xs font-bold transition-all
+                                    ${exportFormat === f.value
+                                        ? "bg-white shadow text-indigo-600 border border-indigo-200"
+                                        : "text-gray-500 hover:text-gray-700"
+                                    }`}
+                            >
+                                <span>{f.icon}</span>
+                                <span>{f.value.toUpperCase()}</span>
+                            </button>
+                        ))}
+                    </div>
+                    {/* Exportar + Limpiar — fila completa */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={() => exportGrades(grades, exportFormat)}
+                            disabled={grades.length === 0}
+                            className="flex-1 flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-200 disabled:text-gray-400 text-white font-bold py-3 rounded-2xl transition-all shadow-sm active:scale-95"
+                        >
+                            ⬇️ Exportar
+                        </button>
+                        <button
+                            onClick={handleClearAll}
+                            disabled={grades.length === 0 && !transcript}
+                            className="flex items-center justify-center gap-2 bg-red-100 hover:bg-red-200 disabled:bg-gray-100 disabled:text-gray-400 text-red-600 font-bold py-3 px-5 rounded-2xl transition-all active:scale-95"
+                        >
+                            🗑️ Limpiar
+                        </button>
+                    </div>
                 </div>
             </div>
 
