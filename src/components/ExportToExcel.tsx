@@ -3,15 +3,30 @@
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import { jsPDF } from "jspdf";
+import {
+    Document,
+    Packer,
+    Paragraph,
+    Table,
+    TableRow,
+    TableCell,
+    TextRun,
+    WidthType,
+    AlignmentType,
+    ShadingType,
+    BorderStyle,
+    HeadingLevel,
+} from "docx";
 import { Grade } from "@/types/grade";
 
-export type ExportFormat = "xlsx" | "csv" | "ods" | "pdf";
+export type ExportFormat = "xlsx" | "csv" | "ods" | "pdf" | "docx";
 
 export const EXPORT_FORMATS: { value: ExportFormat; label: string; icon: string }[] = [
     { value: "xlsx", label: "Excel (.xlsx)", icon: "📊" },
     { value: "csv", label: "CSV (.csv)", icon: "📄" },
     { value: "ods", label: "ODS (.ods)", icon: "📋" },
     { value: "pdf", label: "PDF (.pdf)", icon: "📕" },
+    { value: "docx", label: "Word (.docx)", icon: "📝" },
 ];
 
 function exportAsSpreadsheet(data: Grade[], format: "xlsx" | "csv" | "ods") {
@@ -91,9 +106,160 @@ function exportAsPdf(data: Grade[]) {
     doc.save("notas.pdf");
 }
 
+async function exportAsDocx(data: Grade[]) {
+    // Colores en formato hex (sin #)
+    const headerBg = "EDE9FE";   // purple-100
+    const evenRowBg = "F9FAFB";  // gray-50
+    const titleColor = "4F46E5"; // indigo-600
+    const headerColor = "6D28D9"; // purple-700
+
+    const cellBorder = {
+        top: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+        bottom: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+        left: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+        right: { style: BorderStyle.SINGLE, size: 1, color: "D1D5DB" },
+    };
+
+    const gradeColor = (grade: number) => {
+        if (grade >= 17) return "15803D"; // green-700
+        if (grade >= 11) return "A16207"; // yellow-700
+        return "B91C1C";                  // red-700
+    };
+
+    const headerRow = new TableRow({
+        tableHeader: true,
+        children: [
+            new TableCell({
+                shading: { type: ShadingType.SOLID, color: headerBg },
+                borders: cellBorder,
+                width: { size: 75, type: WidthType.PERCENTAGE },
+                children: [
+                    new Paragraph({
+                        alignment: AlignmentType.LEFT,
+                        children: [
+                            new TextRun({
+                                text: "Alumno",
+                                bold: true,
+                                color: headerColor,
+                                size: 24,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            new TableCell({
+                shading: { type: ShadingType.SOLID, color: headerBg },
+                borders: cellBorder,
+                width: { size: 25, type: WidthType.PERCENTAGE },
+                children: [
+                    new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                            new TextRun({
+                                text: "Nota",
+                                bold: true,
+                                color: headerColor,
+                                size: 24,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+        ],
+    });
+
+    const dataRows = data.map((g, i) =>
+        new TableRow({
+            children: [
+                new TableCell({
+                    shading: i % 2 === 0
+                        ? { type: ShadingType.SOLID, color: evenRowBg }
+                        : undefined,
+                    borders: cellBorder,
+                    children: [
+                        new Paragraph({
+                            children: [new TextRun({ text: g.student, size: 22 })],
+                        }),
+                    ],
+                }),
+                new TableCell({
+                    shading: i % 2 === 0
+                        ? { type: ShadingType.SOLID, color: evenRowBg }
+                        : undefined,
+                    borders: cellBorder,
+                    children: [
+                        new Paragraph({
+                            alignment: AlignmentType.CENTER,
+                            children: [
+                                new TextRun({
+                                    text: String(g.grade),
+                                    bold: true,
+                                    color: gradeColor(g.grade),
+                                    size: 22,
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+            ],
+        })
+    );
+
+    const doc = new Document({
+        sections: [
+            {
+                children: [
+                    new Paragraph({
+                        heading: HeadingLevel.HEADING_1,
+                        alignment: AlignmentType.CENTER,
+                        children: [
+                            new TextRun({
+                                text: "Registro de Notas",
+                                bold: true,
+                                color: titleColor,
+                                size: 40,
+                            }),
+                        ],
+                    }),
+                    new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        spacing: { after: 300 },
+                        children: [
+                            new TextRun({
+                                text: "3° de Secundaria",
+                                color: "9CA3AF",
+                                size: 22,
+                            }),
+                        ],
+                    }),
+                    new Table({
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        rows: [headerRow, ...dataRows],
+                    }),
+                    new Paragraph({
+                        spacing: { before: 200 },
+                        children: [
+                            new TextRun({
+                                text: `Total: ${data.length} alumno(s)`,
+                                color: "9CA3AF",
+                                size: 18,
+                            }),
+                        ],
+                    }),
+                ],
+            },
+        ],
+    });
+
+    const buffer = await Packer.toBlob(doc);
+    saveAs(buffer, "notas.docx");
+}
+
 export function exportGrades(data: Grade[], format: ExportFormat) {
     if (format === "pdf") {
         exportAsPdf(data);
+    } else if (format === "docx") {
+        exportAsDocx(data);
     } else {
         exportAsSpreadsheet(data, format);
     }
